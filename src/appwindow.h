@@ -10,7 +10,13 @@ class AppWindow : public Gtk::ApplicationWindow {
   ~AppWindow() override = default;
 
   private:
-  std::vector<std::pair<double, double>> m_nodes; // list of node positions
+  int m_nextNodeId = 0;
+
+  struct Node {
+    double x, y;
+    std::string label;
+  };
+  std::vector<Node> m_nodes;
   void on_canvas_click(int n_press, double x, double y);
 
   // Layout containers

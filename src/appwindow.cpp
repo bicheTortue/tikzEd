@@ -59,9 +59,14 @@ AppWindow::AppWindow()
 
     // Draw nodes
     cr->set_source_rgb(0.0, 0.0, 0.8);
-    for (auto& pt : m_nodes) {
-      cr->arc(pt.first, pt.second, 5, 0, 2 * M_PI);
+    for (auto& node : m_nodes) {
+      // Draw the node circle
+      cr->arc(node.x, node.y, 5, 0, 2 * M_PI);
       cr->fill();
+
+      // Draw the label
+      cr->move_to(node.x + 8, node.y - 8); // offset to the top-right
+      cr->show_text(node.label);
     }
   });
 
@@ -75,12 +80,21 @@ AppWindow::AppWindow()
 void AppWindow::on_canvas_click(int n_press, double x, double y)
 {
   if (m_btn_node.get_active()) {
-    // Snap x and y to the nearest GRID_SIZE multiple
     int grid_x = static_cast<int>(x / GRID_SIZE + 0.5) * GRID_SIZE;
     int grid_y = static_cast<int>(y / GRID_SIZE + 0.5) * GRID_SIZE;
 
-    std::cout << "Placed node at: " << grid_x << ", " << grid_y << std::endl;
-    m_nodes.emplace_back(grid_x, grid_y);
+    // Generate label: A, B, C, ..., Z, AA, AB, ...
+    std::string label;
+    int id = m_nextNodeId++;
+    do {
+      char c = 'A' + (id % 26);
+      label = c + label;
+      id = id / 26 - 1;
+    } while (id >= 0);
+
+    std::cout << "Placed node '" << label << "' at: " << grid_x << ", " << grid_y << std::endl;
+
+    m_nodes.push_back({ grid_x, grid_y, label });
     m_canvas.queue_draw();
 
     // Update TikZ code
@@ -89,7 +103,7 @@ void AppWindow::on_canvas_click(int n_press, double x, double y)
     // std::string end = existing.substr(existing.length() - 19);
     existing.erase(existing.length() - 19); // TODO : CHange to dynamic instead of hard coded
 
-    existing += "\n\\node at (" + std::to_string(grid_x / 10.0) + "," + std::to_string(grid_y / 10.0) + ") {};\n";
+    existing += "\n\\node (" + label + ") at (" + std::to_string(grid_x / 10.0) + "," + std::to_string(grid_y / 10.0) + ") {};\n";
     existing += "\\end{tikzpicture}";
 
     buffer->set_text(existing);
@@ -109,6 +123,6 @@ void AppWindow::on_tool_selected(Gtk::ToggleButton* clicked_button)
 
     // Optional: update the TikZ preview
     m_previewText.get_buffer()->set_text(
-        "\n\\begin{tikzpicture}\n  % ...\n\\end{tikzpicture}");
+        "\n\\begin{tikzpicture}\n\\end{tikzpicture}");
   }
 }

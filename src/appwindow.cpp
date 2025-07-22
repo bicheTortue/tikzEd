@@ -28,7 +28,7 @@ AppWindow::AppWindow()
   m_canvas.set_vexpand(true);
 
   // TikZ Preview panel
-  m_previewText.set_editable(false);
+  m_previewText.set_editable(true);
   m_previewText.get_buffer()->set_text("% TikZ preview will appear here.");
   m_previewScroll.set_child(m_previewText);
   m_previewScroll.set_policy(Gtk::PolicyType::AUTOMATIC, Gtk::PolicyType::AUTOMATIC);
@@ -86,7 +86,12 @@ void AppWindow::on_canvas_click(int n_press, double x, double y)
     // Update TikZ code
     auto buffer = m_previewText.get_buffer();
     std::string existing = buffer->get_text();
-    existing += "\n\\node at (" + std::to_string(grid_x / 10.0) + "," + std::to_string(grid_y / 10.0) + ") {};";
+    // std::string end = existing.substr(existing.length() - 19);
+    existing.erase(existing.length() - 19); // TODO : CHange to dynamic instead of hard coded
+
+    existing += "\n\\node at (" + std::to_string(grid_x / 10.0) + "," + std::to_string(grid_y / 10.0) + ") {};\n";
+    existing += "\\end{tikzpicture}";
+
     buffer->set_text(existing);
   }
 }
@@ -104,6 +109,6 @@ void AppWindow::on_tool_selected(Gtk::ToggleButton* clicked_button)
 
     // Optional: update the TikZ preview
     m_previewText.get_buffer()->set_text(
-        "% Tool selected: " + label + "\n\\begin{tikzpicture}\n  % ...\n\\end{tikzpicture}");
+        "\n\\begin{tikzpicture}\n  % ...\n\\end{tikzpicture}");
   }
 }

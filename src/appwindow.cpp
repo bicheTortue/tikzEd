@@ -1,6 +1,8 @@
 #include "appwindow.h"
 #include <iostream>
 
+constexpr int GRID_SIZE = 20;
+
 AppWindow::AppWindow()
 {
   set_title("TikzEd");
@@ -43,10 +45,19 @@ AppWindow::AppWindow()
 
   // Draw function
   m_canvas.set_draw_func([this](const Cairo::RefPtr<Cairo::Context>& cr, int width, int height) {
+    // Background
     cr->set_source_rgb(1.0, 1.0, 1.0);
     cr->paint();
 
-    // Draw existing nodes
+    // Draw grid
+    cr->set_source_rgb(0.9, 0.9, 0.9);
+    for (int x = 0; x < width; x += GRID_SIZE)
+      cr->move_to(x, 0), cr->line_to(x, height);
+    for (int y = 0; y < height; y += GRID_SIZE)
+      cr->move_to(0, y), cr->line_to(width, y);
+    cr->stroke();
+
+    // Draw nodes
     cr->set_source_rgb(0.0, 0.0, 0.8);
     for (auto& pt : m_nodes) {
       cr->arc(pt.first, pt.second, 5, 0, 2 * M_PI);
@@ -64,17 +75,22 @@ AppWindow::AppWindow()
 void AppWindow::on_canvas_click(int n_press, double x, double y)
 {
   if (m_btn_node.get_active()) {
-    std::cout << "Placed node at: " << x << ", " << y << std::endl;
-    m_nodes.emplace_back(x, y);
+    // Snap x and y to the nearest GRID_SIZE multiple
+    int grid_x = static_cast<int>(x / GRID_SIZE + 0.5) * GRID_SIZE;
+    int grid_y = static_cast<int>(y / GRID_SIZE + 0.5) * GRID_SIZE;
+
+    std::cout << "Placed node at: " << grid_x << ", " << grid_y << std::endl;
+    m_nodes.emplace_back(grid_x, grid_y);
     m_canvas.queue_draw();
 
-    // Update preview
+    // Update TikZ code
     auto buffer = m_previewText.get_buffer();
     std::string existing = buffer->get_text();
-    existing += "\n\\node at (" + std::to_string(x / 10) + "," + std::to_string(y / 10) + ") {};";
+    existing += "\n\\node at (" + std::to_string(grid_x / 10.0) + "," + std::to_string(grid_y / 10.0) + ") {};";
     buffer->set_text(existing);
   }
 }
+
 void AppWindow::on_tool_selected(Gtk::ToggleButton* clicked_button)
 {
   for (auto* btn : { &m_btn_select, &m_btn_node, &m_btn_edge }) {
